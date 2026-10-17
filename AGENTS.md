@@ -86,4 +86,4 @@ These are enforced by `checks` (each module evaluated alone, with every adapted 
 
 ## Not done
 
-Terminal keybindings · tmux not enabled anywhere (theme adapter only) · statix/deadnix not in `checks` · no CI · Linux never run on hardware.
+Terminal keybindings · statix/deadnix not in `checks` · no CI · Linux never run on hardware.

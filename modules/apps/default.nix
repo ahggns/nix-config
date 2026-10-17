@@ -16,6 +16,7 @@ in
     neovim.enable = on;
     git.enable = on;
     fzf.enable = on;
+    tmux.enable = on;
     direnv.enable = on;
     starship.enable = on;
     oh-my-posh.enable = on;
