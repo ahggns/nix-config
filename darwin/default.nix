@@ -1,10 +1,4 @@
-{
-  self,
-  user,
-  pkgs,
-  lib,
-  ...
-}:
+{ self, user, ... }:
 
 {
   imports = [ self.darwinModules.default ];
@@ -17,19 +11,6 @@
       tilesize = 68;
     };
   };
-
-  nixpkgs.config.allowUnfreePredicate =
-    let
-      allowedUnfreePrefixes = [
-        "claude-"
-        "vscode"
-        "spotify"
-        "terraform"
-      ];
-    in
-    pkg: lib.any (prefix: lib.hasPrefix prefix (lib.getName pkg)) allowedUnfreePrefixes;
-
-  fonts.packages = [ pkgs.meslo-lgs-nf ];
 
   homebrew = {
     enable = true;
@@ -51,18 +32,5 @@
         section = "others";
       }
     ];
-  };
-
-  home-manager = {
-    useGlobalPkgs = true;
-    useUserPackages = true;
-    extraSpecialArgs = { inherit self; };
-    users.${user} = {
-      imports = [ ../home.nix ];
-      home = {
-        username = user;
-        homeDirectory = "/Users/${user}";
-      };
-    };
   };
 }

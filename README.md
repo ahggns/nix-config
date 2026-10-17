@@ -6,10 +6,12 @@ ahggns home-manager modules, plus the machines that consume them. Architecture: 
 
 | Command | Does |
 |---|---|
-| `nix run .` | build + activate this machine (darwin or linux) |
-| `nix build .` | build only (`./result`) |
+| `nix run .` | build + activate home (standalone home-manager, no sudo) |
+| `nix run .#system` | build + activate nix-darwin: nix.conf, Homebrew, Dock (sudo) |
+| `nix build .` / `nix build .#system` | build only (`./result`) |
 | `nix flake check --all-systems` | evaluate every module alone, on every system |
-| `sudo darwin-rebuild --rollback` | previous generation |
+| `~/.local/state/nix/profiles/home-manager-<N>-link/activate` | home rollback |
+| `sudo darwin-rebuild --rollback` | system rollback |
 | `nix fmt -- <files>` | nixfmt |
 | `nix run nixpkgs#statix -- check .` / `nix run nixpkgs#deadnix -- .` | lint |
 | `nix flake update [input]` | bump pins |
@@ -32,7 +34,7 @@ cd ~/src/ahggns/nix-config && scripts/bootstrap.sh
 | move `/etc/zshrc`, `/etc/bashrc` aside | nix-darwin won't overwrite unrecognized files |
 | move unmanaged Homebrew `Library/Taps` aside (asks) | nix-homebrew owns it as a symlink |
 | move a symlinked `~/.zshenv` aside | home-manager can't back up symlinks |
-| `nix run .` | first switch |
+| `nix run .#system`, then `nix run .` | first switch |
 
 ## Downstream
 
@@ -41,8 +43,8 @@ cd ~/src/ahggns/nix-config && scripts/bootstrap.sh
 | `homeManagerModules.{terminal,theme,shell,git,editor}` | configure apps you enable; never enable anything |
 | `homeManagerModules.apps` / `.default` | this machine's app set / everything (needs the private `think` input) |
 | `darwinModules.{nix,user,homebrew,dock,default}` | nix.conf, primary user, nix-homebrew (when `homebrew.enable`), Dock (when `dock.enable`) |
-| `lib.mkSwitchApp pkgs machine` | `nix run .` app for a consumer |
-| `apps.aarch64-darwin.bootstrap` | first switch of the flake in `$PWD` |
+| `lib.mkSwitchApp pkgs out` | `nix run` app activating a home-manager or nix-darwin build |
+| `apps.aarch64-darwin.bootstrap` | first switch (system, then home) of the flake in `$PWD` |
 | `packages.<system>.gw`, `overlays.default` | `gw`: run the nearest `gradlew` up the tree |
 | `templates.downstream` | starter consumer flake, see `docs/downstream.md` |
 

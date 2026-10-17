@@ -30,7 +30,10 @@ let
 
   applyChrome = pkgs.writeShellApplication {
     name = "cmux-apply-chrome";
-    runtimeInputs = [ pkgs.jq ];
+    runtimeInputs = [
+      pkgs.jq
+      pkgs.gnused
+    ];
     text = builtins.readFile ../../../scripts/cmux-apply-chrome.sh;
   };
 in

@@ -14,13 +14,13 @@ git init && git add -A
 nix run github:ahggns/nix-config#bootstrap
 ```
 
-After that: `nix run .` to switch, `nix flake update ahggns` for new defaults.
+After that: `nix run .` (home, no sudo), `nix run .#system` (nix-darwin, sudo), `nix flake update ahggns` for new defaults.
 
 ## Layout
 
 ```
-flake.nix                 inputs; user; darwinConfigurations.default; packages/apps.default
-darwin/default.nix        ahggns.darwinModules.default; primaryUser; fonts; HM wiring
+flake.nix                 inputs; user; pkgs (overlays, unfree); homeConfigurations/darwinConfigurations.default; packages/apps.{default,system}
+darwin/default.nix        ahggns.darwinModules.default; primaryUser
 home/default.nix          ahggns HM modules + ./apps + ./overrides + ./modules
 home/apps/default.nix     programs.<x>.enable, home.packages    (the only file that enables)
 home/overrides/           one file per ahggns module overridden
@@ -40,7 +40,7 @@ home/modules/             machine-local modules (example: awscli.nix)
 | Want | Add |
 |---|---|
 | Terminal emulator | `programs.kitty.enable = true;` (or alacritty, ghostty) in `home/apps` |
-| VS Code / Cursor | `programs.vscode.enable = true;` + allow unfree in `darwin/` |
+| VS Code / Cursor | `programs.vscode.enable = true;` + `config.allowUnfreePredicate` on `pkgs` in `flake.nix` |
 | Homebrew casks | `homebrew = { enable = true; casks = [ ... ]; };` in `darwin/` |
 | Managed Dock | `dock = { enable = true; entries = [ ... ]; };` in `darwin/` |
 | starship prompt | `programs.starship.enable = true;` + `shell.prompt.default = "starship";` |

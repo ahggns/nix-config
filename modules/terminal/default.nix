@@ -1,4 +1,5 @@
 {
+  config,
   lib,
   pkgs,
   ...
@@ -28,4 +29,8 @@ in
       description = "Points at 96dpi; 72dpi emulators are scaled.";
     };
   };
+
+  config.home.packages = lib.optional (
+    config.terminal.font.package != null
+  ) config.terminal.font.package;
 }

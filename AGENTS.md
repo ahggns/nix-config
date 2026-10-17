@@ -1,18 +1,19 @@
 # AGENTS.md
 
-Nix flake publishing ahggns defaults as home-manager modules (`homeManagerModules.*`), plus this repo's own machines (one Mac via nix-darwin, Linux via standalone home-manager). The machines consume the modules exactly as a downstream flake would.
+Nix flake publishing ahggns defaults as home-manager modules (`homeManagerModules.*`), plus this repo's own machines: standalone home-manager per system (`homeConfigurations.<system>`), and one Mac's system layer via nix-darwin (`darwinConfigurations.default`, no home-manager inside). The machines consume the modules exactly as a downstream flake would.
 
 ## Commands
 
 | Task | Command |
 |---|---|
 | Verify (run before declaring done) | `nix flake check --all-systems` |
-| Build this machine, no activation | `nix build .` |
-| Build + activate (needs sudo on darwin; ask the user first) | `nix run .` |
+| Build home / system, no activation | `nix build .` / `nix build .#system` |
+| Build + activate home (no sudo; needs App Management permission for the terminal on macOS) | `nix run .` |
+| Build + activate nix-darwin (sudo; ask the user first) | `nix run .#system` |
 | Format touched files | `nix fmt -- <files>` |
 | Lint | `nix run nixpkgs#statix -- check .` and `nix run nixpkgs#deadnix -- .` |
 | Shell scripts | `nix run nixpkgs#shellcheck -- scripts/*.sh` |
-| Inspect generated dotfiles | `nix build .#darwinConfigurations.default.config.home-manager.users.ahiggins.home-files --no-link --print-out-paths` |
+| Inspect generated dotfiles | `nix build .#homeConfigurations.aarch64-darwin.config.home-files --no-link --print-out-paths` |
 | Diff closures before/after | `nix store diff-closures <old> <new>` |
 
 New files must be `git add`ed before any `nix` command sees them (flakes only see tracked files; untracked = eval error).
@@ -22,9 +23,9 @@ For a behavior-preserving refactor, build the home-files before and after and `d
 ## Layout
 
 ```
-flake.nix                outputs; `machine` per system; `switch` app; eval checks
+flake.nix                outputs; `home` per system; unfree allowlist; switch apps; eval checks
 home.nix                 personal HM config: homeManagerModules.default + git identity
-darwin/default.nix       this Mac: darwinModules.default + casks, Dock entries, fonts, unfree, HM wiring
+darwin/default.nix       this Mac's system layer: darwinModules.default + casks, Dock entries
 modules/lib.nix          ah.defaults · ah.importDir · ah.enabled
 modules/programs/        enable/package shims for apps without an HM module (cmux)
 modules/darwin/          darwinModules: nix.nix, user.nix, homebrew.nix (gated on homebrew.enable), dock.nix (dock.*)
@@ -67,7 +68,7 @@ These are enforced by `checks` (each module evaluated alone, with every adapted 
 - Config in a non-Nix language is a real file read with `builtins.readFile` (`init.lua`, `config.vim`, `scripts/*.sh`), not an embedded string. Scripts get data through arguments, not interpolation.
 - Custom derivations live in their own file, called via `pkgs.callPackage`, with a one-line bump command in a header comment. Programs meant for consumers go in `pkgs/` and get a `packages`/`overlays.default` entry.
 - `docs/downstream.md` describes `templates/downstream/`; update both together.
-- Unfree packages need their name prefix added to the allowlist in `darwin/default.nix`.
+- Unfree packages need their name prefix added to `allowedUnfreePrefixes` in `flake.nix`.
 - `homebrew.onActivation.cleanup = "none"`; don't change to `"zap"` without the user.
 - `nix.enable = true` assumes the official Nix installer.
 - Copy (comments, READMEs) is terse, present-state only, and uses tables over prose. Comments only for non-obvious invariants; prefer clear code. This file is exempt.

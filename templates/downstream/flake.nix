@@ -30,18 +30,39 @@
     let
       system = "aarch64-darwin";
       user = "jdoe";
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [ ahggns.overlays.default ];
+      };
       mac = nix-darwin.lib.darwinSystem {
         inherit system;
         specialArgs = { inherit ahggns user; };
+        modules = [ ./darwin ];
+      };
+      home = home-manager.lib.homeManagerConfiguration {
+        inherit pkgs;
+        extraSpecialArgs = { inherit ahggns; };
         modules = [
-          home-manager.darwinModules.home-manager
-          ./darwin
+          ./home
+          {
+            home = {
+              username = user;
+              homeDirectory = "/Users/${user}";
+            };
+          }
         ];
       };
     in
     {
       darwinConfigurations.default = mac;
-      packages.${system}.default = mac.system;
-      apps.${system}.default = ahggns.lib.mkSwitchApp nixpkgs.legacyPackages.${system} mac.system;
+      homeConfigurations.default = home;
+      packages.${system} = {
+        default = home.activationPackage;
+        inherit (mac) system;
+      };
+      apps.${system} = {
+        default = ahggns.lib.mkSwitchApp pkgs home.activationPackage;
+        system = ahggns.lib.mkSwitchApp pkgs mac.system;
+      };
     };
 }

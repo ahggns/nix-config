@@ -102,7 +102,11 @@ in
     shell.zsh.snippets = {
       homebrew = snippet 950 (
         lib.optionalString pkgs.stdenv.isDarwin ''
-          [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
+          if [[ -x /opt/homebrew/bin/brew ]]; then
+            eval "$(/opt/homebrew/bin/brew shellenv)"
+            # nix-managed tools win over formulae of the same name
+            path=(''${path:#/opt/homebrew/(bin|sbin)} /opt/homebrew/bin /opt/homebrew/sbin)
+          fi
         ''
       );
 

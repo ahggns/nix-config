@@ -1,8 +1,8 @@
 {
   description = "ahggns defaults as importable home-manager modules (terminal, theme, shell, git, editor, apps), plus the personal machines that consume them";
 
-  # nix run .    build + activate
-  # nix build .  build only
+  # nix run .         build + activate home (no sudo)
+  # nix run .#system  build + activate nix-darwin (sudo)
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -151,13 +151,19 @@
           ];
         }) reusable
         // lib.optionalAttrs (system == "aarch64-darwin") {
-          template-downstream = pkgs.writeText "template-downstream" (
-            builtins.unsafeDiscardStringContext
-              ((import ./templates/downstream/flake.nix).outputs {
+          template-downstream =
+            let
+              t = (import ./templates/downstream/flake.nix).outputs {
                 inherit nixpkgs nix-darwin home-manager;
                 ahggns = self;
-              }).darwinConfigurations.default.system.drvPath
-          );
+              };
+            in
+            pkgs.writeText "template-downstream" (
+              builtins.unsafeDiscardStringContext (
+                t.darwinConfigurations.default.system.drvPath
+                + t.homeConfigurations.default.activationPackage.drvPath
+              )
+            );
         }
         // {
           hm-default = evalOnly "default" [ self.homeManagerModules.default ];
@@ -168,39 +174,46 @@
           ];
         };
 
+      systems = [ "aarch64-darwin" ] ++ linuxSystems;
+
+      allowedUnfreePrefixes = [
+        "claude-"
+        "vscode"
+        "spotify"
+        "terraform"
+      ];
+
       mac = nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
         specialArgs = { inherit self user; };
-        modules = [
-          home-manager.darwinModules.home-manager
-          ./darwin
-        ];
+        modules = [ ./darwin ];
       };
 
-      linuxHome =
+      home =
         system:
-        home-manager.lib.homeManagerConfiguration {
+        let
           pkgs = import nixpkgs {
             inherit system;
-            config.allowUnfree = true;
+            config.allowUnfreePredicate =
+              pkg:
+              nixpkgs.lib.any (
+                prefix: nixpkgs.lib.hasPrefix prefix (nixpkgs.lib.getName pkg)
+              ) allowedUnfreePrefixes;
           };
+        in
+        home-manager.lib.homeManagerConfiguration {
+          inherit pkgs;
           extraSpecialArgs = { inherit self; };
           modules = [
             ./home.nix
             {
               home = {
                 username = user;
-                homeDirectory = "/home/${user}";
+                homeDirectory = if pkgs.stdenv.isDarwin then "/Users/${user}" else "/home/${user}";
               };
             }
           ];
         };
-
-      machine = {
-        aarch64-darwin = mac.system;
-      }
-      // nixpkgs.lib.genAttrs linuxSystems (system: (linuxHome system).activationPackage);
-      systems = builtins.attrNames machine;
 
       mkSwitchApp = pkgs: machine: {
         type = "app";
@@ -210,16 +223,20 @@
             text = builtins.readFile ./scripts/switch.sh;
           }
         }/bin/switch ${machine}"}";
-        meta.description = "Build and activate this machine";
+        meta.description = "Activate a home-manager or nix-darwin build";
       };
     in
     {
       formatter = nixpkgs.lib.genAttrs systems (system: nixpkgs.legacyPackages.${system}.nixfmt);
 
-      packages = nixpkgs.lib.genAttrs systems (system: {
-        default = machine.${system};
-        gw = nixpkgs.legacyPackages.${system}.callPackage ./pkgs/gw.nix { };
-      });
+      packages = nixpkgs.lib.genAttrs systems (
+        system:
+        {
+          default = self.homeConfigurations.${system}.activationPackage;
+          gw = nixpkgs.legacyPackages.${system}.callPackage ./pkgs/gw.nix { };
+        }
+        // nixpkgs.lib.optionalAttrs (system == "aarch64-darwin") { inherit (mac) system; }
+      );
 
       overlays.default = final: _: {
         gw = final.callPackage ./pkgs/gw.nix { };
@@ -231,9 +248,10 @@
           pkgs = nixpkgs.legacyPackages.${system};
         in
         {
-          default = mkSwitchApp pkgs machine.${system};
+          default = mkSwitchApp pkgs self.packages.${system}.default;
         }
         // nixpkgs.lib.optionalAttrs pkgs.stdenv.isDarwin {
+          system = mkSwitchApp pkgs self.packages.${system}.system;
           bootstrap = {
             type = "app";
             program = nixpkgs.lib.getExe (
@@ -242,7 +260,7 @@
                 text = builtins.readFile ./scripts/bootstrap.sh;
               }
             );
-            meta.description = "First nix-darwin switch of the flake in $PWD";
+            meta.description = "First switch (system, then home) of the flake in $PWD";
           };
         }
       );
@@ -314,6 +332,8 @@
         path = ./templates/downstream;
         description = "A machine that consumes the ahggns home-manager modules and brings its own apps";
       };
+
+      homeConfigurations = nixpkgs.lib.genAttrs systems home;
 
       darwinConfigurations.default = mac;
     };

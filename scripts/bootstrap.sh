@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# First nix-darwin switch of the flake in $PWD (or $1). Idempotent.
+# First switch (nix-darwin, then home-manager) of the flake in $PWD (or $1). Idempotent.
 # Prereqs: Xcode CLT; an ssh-agent key if the flake has private inputs.
 set -euo pipefail
 
@@ -51,6 +51,7 @@ if [ -L "$HOME/.zshenv" ] && [[ "$(readlink "$HOME/.zshenv")" != /nix/store/* ]]
 fi
 
 echo "== switch"
-nix --extra-experimental-features 'nix-command flakes' run "$FLAKE_DIR"
+nix --extra-experimental-features 'nix-command flakes' run "$FLAKE_DIR#system"
+nix run "$FLAKE_DIR"
 
 echo "done; open a new terminal"
