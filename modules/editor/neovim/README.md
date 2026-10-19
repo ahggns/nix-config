@@ -5,7 +5,7 @@ Active when `programs.neovim.enable`. Colorscheme comes from the theme module.
 | File | Contents |
 |---|---|
 | `default.nix` | `plugins`, `extraPackages` (LSPs, formatters), treesitter grammars |
-| `init.lua` | all config: LSP, completion, telescope, conform, gitsigns, which-key, Claude Code, workspace layout |
+| `init.lua` | all config: LSP, completion, telescope, conform, gitsigns, which-key, Claude Code |
 | `config.vim` | indent, `termguicolors` |
 | `vim-plist.nix` | unpackaged plugin (`buildVimPlugin` template) |
 
@@ -36,7 +36,6 @@ Format on save is on for every filetype above.
 | `cf` | format |
 | `ac` `af` `ab` `as` | Claude: toggle, focus, add buffer, send selection |
 | `aa` `ad` | Claude: accept/deny diff |
-| `ww` / `:Workspace` | Claude split + terminal below editor; auto on `nvim` / `nvim <dir>` |
 
 Leave a terminal window with `<C-\><C-n>`; `Esc` goes to the process (cancels Claude).
 

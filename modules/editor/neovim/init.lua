@@ -117,7 +117,6 @@ require('which-key').add({
   { '<leader>f', group = 'Find' },
   { '<leader>c', group = 'Code' },
   { '<leader>a', group = 'Claude' },
-  { '<leader>w', group = 'Window' },
 })
 
 require('snacks').setup({})
@@ -141,35 +140,3 @@ end
 
 vim.o.title = true
 vim.o.titlestring = 'vi ' .. vim.fs.basename(target_dir())
-
--- claude splits first for full height; the terminal is then relative to
--- the editor column, not the screen.
-local function workspace()
-  local editor = vim.api.nvim_get_current_win()
-  local cwd = target_dir()
-  vim.cmd.only()
-  pcall(vim.cmd.ClaudeCode)
-  vim.schedule(function()
-    if not vim.api.nvim_win_is_valid(editor) then return end
-    vim.api.nvim_set_current_win(editor)
-    vim.cmd('belowright 15new')
-    vim.fn.jobstart(vim.o.shell, { term = true, cwd = cwd })
-    vim.schedule(function()
-      if vim.api.nvim_win_is_valid(editor) then
-        vim.api.nvim_set_current_win(editor)
-      end
-    end)
-  end)
-end
-
-vim.api.nvim_create_user_command('Workspace', workspace, {})
-vim.keymap.set('n', '<leader>ww', workspace, { desc = 'Workspace layout' })
-
--- session launches only; $EDITOR and one-off edits stay a plain window.
-vim.api.nvim_create_autocmd('VimEnter', {
-  callback = function()
-    if vim.fn.argc() == 0 or vim.fn.isdirectory(vim.fn.argv(0)) == 1 then
-      workspace()
-    end
-  end,
-})
